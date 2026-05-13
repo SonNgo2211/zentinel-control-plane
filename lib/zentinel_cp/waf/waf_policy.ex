@@ -29,6 +29,8 @@ defmodule ZentinelCp.Waf.WafPolicy do
     field :max_uri_length, :integer
     field :allowed_content_types, {:array, :string}, default: []
 
+    field :ai_knowledge, :map, default: %{}
+
     belongs_to :project, ZentinelCp.Projects.Project
     has_many :rule_overrides, ZentinelCp.Waf.WafPolicyRuleOverride
     has_many :services, ZentinelCp.Services.Service
@@ -53,7 +55,8 @@ defmodule ZentinelCp.Waf.WafPolicy do
       :max_header_size,
       :max_uri_length,
       :allowed_content_types,
-      :project_id
+      :project_id,
+      :ai_knowledge
     ])
     |> validate_required([:name, :mode, :sensitivity, :project_id])
     |> validate_length(:name, min: 1, max: 100)
@@ -83,7 +86,8 @@ defmodule ZentinelCp.Waf.WafPolicy do
       :max_body_size,
       :max_header_size,
       :max_uri_length,
-      :allowed_content_types
+      :allowed_content_types,
+      :ai_knowledge
     ])
     |> validate_required([:name, :mode, :sensitivity])
     |> validate_length(:name, min: 1, max: 100)

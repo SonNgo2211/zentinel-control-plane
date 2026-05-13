@@ -148,6 +148,9 @@ defmodule ZentinelCpWeb.WafLive.Anomalies do
                 <span :if={anomaly.deviation_sigma}>
                   Deviation: {anomaly.deviation_sigma} sigma
                 </span>
+                <span :if={anomaly.ai_score} class="text-primary font-medium">
+                  AI Score: {Float.round(anomaly.ai_score, 2)}
+                </span>
               </div>
             </div>
             <div :if={anomaly.status == "active"} class="flex gap-1">

@@ -1,0 +1,17 @@
+{{- if .Values.aiAuditor.models.persistence.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "zentinel.fullname" . }}-ai-models
+  labels:
+    {{- include "zentinel.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.aiAuditor.models.persistence.size }}
+  {{- if .Values.aiAuditor.models.persistence.storageClass }}
+  storageClassName: {{ .Values.aiAuditor.models.persistence.storageClass }}
+  {{- end }}
+{{- end }}

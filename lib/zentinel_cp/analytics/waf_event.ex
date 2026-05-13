@@ -10,7 +10,7 @@ defmodule ZentinelCp.Analytics.WafEvent do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  @rule_types ~w(sqli xss rfi lfi rce scanner custom)
+  @rule_types ~w(sqli xss rfi lfi rce scanner custom zentinelsec)
   @actions ~w(blocked logged challenged)
   @severities ~w(critical high medium low)
 
@@ -33,6 +33,10 @@ defmodule ZentinelCp.Analytics.WafEvent do
     field :request_headers, :map, default: %{}
     field :metadata, :map, default: %{}
 
+    field :ai_score, :float
+    field :ai_recommendation, :string
+    field :ai_metadata, :map, default: %{}
+
     timestamps(type: :utc_datetime, updated_at: false)
   end
 
@@ -54,7 +58,10 @@ defmodule ZentinelCp.Analytics.WafEvent do
       :user_agent,
       :geo_country,
       :request_headers,
-      :metadata
+      :metadata,
+      :ai_score,
+      :ai_recommendation,
+      :ai_metadata
     ])
     |> validate_required([:project_id, :timestamp, :rule_type, :action])
     |> validate_inclusion(:rule_type, @rule_types)

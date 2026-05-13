@@ -108,6 +108,27 @@ defmodule ZentinelCp.Waf do
     Repo.delete(policy)
   end
 
+  @doc """
+  Enriches AI knowledge from a verified security event.
+  Acts as a 'Teacher' for the active learning system.
+  """
+  def learn_from_event(policy_id, %{matched_data: data, rule_type: type}) do
+    case get_policy(policy_id) do
+      nil -> {:error, :not_found}
+      policy ->
+        knowledge = policy.ai_knowledge || %{}
+        # Group by attack type (simplified)
+        group = if type == "zentinelsec", do: "verified_rule_match", else: type
+        patterns = Map.get(knowledge, group, %{})
+        
+        # Add pattern with high confidence if it comes from a verified rule
+        new_patterns = Map.put(patterns, data, 0.95)
+        new_knowledge = Map.put(knowledge, group, new_patterns)
+        
+        update_policy(policy, %{ai_knowledge: new_knowledge})
+    end
+  end
+
   @doc "Returns a changeset for tracking WAF policy changes in forms."
   def change_policy(%WafPolicy{} = policy, attrs \\ %{}) do
     WafPolicy.update_changeset(policy, attrs)

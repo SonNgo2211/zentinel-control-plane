@@ -226,6 +226,46 @@ defmodule ZentinelCpWeb.WafPoliciesLive.Show do
       <.k8s_section>
         <pre class="text-xs bg-base-200 p-4 rounded-lg overflow-x-auto"><code>{@kdl_preview}</code></pre>
       </.k8s_section>
+
+      <div class="divider text-xs text-base-content/50">AI Intelligence & Active Learning</div>
+
+      <.k8s_section>
+        <div :if={@policy.ai_knowledge == %{}} class="text-center py-8 text-base-content/50 text-sm">
+          No AI patterns learned yet. The system will automatically add patterns based on audit feedback.
+        </div>
+
+        <div :for={{attack_type, patterns} <- @policy.ai_knowledge} class="mb-6">
+          <h3 class="text-sm font-semibold mb-2 uppercase flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+            {attack_type} Patterns
+          </h3>
+          <table class="table table-xs">
+            <thead>
+              <tr>
+                <th>Pattern / Signature</th>
+                <th>Confidence Weight</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr :for={{pattern, weight} <- patterns}>
+                <td class="font-mono text-xs">{pattern}</td>
+                <td>
+                  <div class="flex items-center gap-2">
+                    <progress class="progress progress-primary w-20" value={weight} max="1.0"></progress>
+                    <span class="text-xs">{Float.round(weight * 1.0, 2)}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class={["badge badge-xs", if(weight > 0.5, do: "badge-success", else: "badge-ghost")]}>
+                    {if weight > 0.5, do: "Active", else: "Learning"}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </.k8s_section>
     </div>
     """
   end
@@ -266,7 +306,20 @@ defmodule ZentinelCpWeb.WafPoliciesLive.Show do
         ["    category #{inspect(category)} {"] ++ rule_lines ++ ["    }"]
       end)
 
-    kdl = lines ++ category_lines ++ ["}"]
+    ai_lines =
+      if policy.ai_knowledge != %{} do
+        ["    ml {", "        classifier-enabled true"] ++
+          Enum.map(policy.ai_knowledge, fn {type, patterns} ->
+            pattern_str =
+              Enum.map(patterns, fn {p, w} -> "#{inspect(p)}=#{w}" end) |> Enum.join(" ")
+
+            "        adaptive-patterns #{inspect(type)} #{pattern_str}"
+          end) ++ ["    }"]
+      else
+        []
+      end
+
+    kdl = lines ++ category_lines ++ ai_lines ++ ["}"]
     Enum.join(kdl, "\n")
   end
 

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zentinel.fullname" . }}-ai-auditor
+  labels:
+    {{- include "zentinel.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ai-auditor
+spec:
+  {{- if not .Values.aiAuditor.autoscaling.enabled }}
+  replicas: {{ .Values.aiAuditor.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "zentinel.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ai-auditor
+  template:
+    metadata:
+      labels:
+        {{- include "zentinel.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: ai-auditor
+    spec:
+      containers:
+        - name: ai-auditor
+          image: "{{ .Values.aiAuditor.image.repository }}:{{ .Values.aiAuditor.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.aiAuditor.image.pullPolicy }}
+          ports:
+            - name: grpc
+              containerPort: 50051
+              protocol: TCP
+          env:
+            - name: RUST_LOG
+              value: "info"
+          resources:
+            {{- toYaml .Values.aiAuditor.resources | nindent 12 }}
+          volumeMounts:
+            - name: models
+              mountPath: /app/models
+      volumes:
+        - name: models
+          {{- if .Values.aiAuditor.models.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "zentinel.fullname" . }}-ai-models
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "zentinel.fullname" . }}-ai-auditor
+  labels:
+    {{- include "zentinel.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ai-auditor
+spec:
+  type: {{ .Values.aiAuditor.service.type }}
+  ports:
+    - port: {{ .Values.aiAuditor.service.port }}
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+  selector:
+    {{- include "zentinel.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: ai-auditor

@@ -8,7 +8,14 @@ import Config
 config :zentinel_cp, ZentinelCp.Repo,
   database: Path.expand("../zentinel_cp_test#{System.get_env("MIX_TEST_PARTITION")}.db", __DIR__),
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.schedulers_online() * 2
+  pool_size: System.schedulers_online() * 2,
+  # Async tests share one SQLite file, and the sandbox wraps each test in a
+  # transaction. Deferred transactions that later upgrade to a write lock get
+  # SQLITE_BUSY immediately, without waiting (`Exqlite.Error: Database busy`).
+  # Immediate transactions take the write lock up front, so contended tests
+  # wait for it, up to busy_timeout.
+  default_transaction_mode: :immediate,
+  busy_timeout: 30_000
 
 # Enable server for E2E tests (Wallaby requires the server to be running)
 config :zentinel_cp, ZentinelCpWeb.Endpoint,
